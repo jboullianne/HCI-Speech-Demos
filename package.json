@@ -1,0 +1,23 @@
+{
+  "name": "hci-speech-demos",
+  "version": "1.0.0",
+  "description": "HCI Homework 5",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jboullianne/HCI-Speech-Demos.git"
+  },
+  "author": "Jean-Marc Boullianne",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jboullianne/HCI-Speech-Demos/issues"
+  },
+  "homepage": "https://github.com/jboullianne/HCI-Speech-Demos#readme",
+  "dependencies": {
+    "express": "^4.14.1",
+    "forever": "^0.15.3"
+  }
+}
