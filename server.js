@@ -9,6 +9,6 @@ app.use(express.static('public'));
 app.use('/', routes);
 
 // Turn on the server!
-app.listen(3000, () => {
-  console.log('App listening on port 3000');
+app.listen(7000, () => {
+  console.log('App listening on port 7000');
 });
