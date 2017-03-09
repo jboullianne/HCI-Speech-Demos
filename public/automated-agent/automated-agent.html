@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+  <title>Automated Agent Demo</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+  <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+</head>
+<style>
+  * {
+    font-family: Verdana, Arial, sans-serif;
+  }
+  a:link {
+    color:#000;
+    text-decoration: none;
+  }
+  a:visited {
+    color:#000;
+  }
+  a:hover {
+    color:#33F;
+  }
+  .button {
+    background: -webkit-linear-gradient(top,#008dfd 0,#0370ea 100%);
+    border: 1px solid #076bd2;
+    border-radius: 3px;
+    color: #fff;
+    display: none;
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 1.3;
+    padding: 8px 25px;
+    text-align: center;
+    text-shadow: 1px 1px 1px #076bd2;
+    letter-spacing: normal;
+  }
+  .center {
+    padding: 10px;
+    text-align: center;
+  }
+  .final {
+    color: black;
+    padding-right: 3px; 
+  }
+  .interim {
+    color: gray;
+  }
+  .info {
+    font-size: 14px;
+    text-align: center;
+    color: #777;
+    display: none;
+  }
+  .right {
+    float: right;
+  }
+  .sidebyside {
+    display: inline-block;
+    width: 45%;
+    min-height: 40px;
+    text-align: left;
+    vertical-align: top;
+  }
+  #headline {
+    font-size: 40px;
+    font-weight: 300;
+  }
+  #info {
+    font-size: 20px;
+    text-align: center;
+    color: #777;
+    visibility: hidden;
+  }
+  #results {
+    font-size: 14px;
+    font-weight: bold;
+    border: 1px solid #ddd;
+    padding: 15px;
+    text-align: left;
+    min-height: 150px;
+  }
+  #start_button {
+    border: 0;
+    background-color:transparent;
+    padding: 0;
+  }
+</style>
+<div id="div_language" style="margin-right: 2em; margin-top: 2em; position: absolute; right: 2em;">
+    <select id="select_language" onchange="updateCountry()"></select>
+    &nbsp;&nbsp;
+    <select id="select_dialect"></select>
+  </div>
+<h1 class="center" id="headline">Automated Agent Demo</h1>
+<h3 class="center" >Using the <a href="http://dvcs.w3.org/hg/speech-api/raw-file/tip/speechapi.html">
+    Web Speech API</a></h3>
+<div id="info">
+  <p id="info_start">Click on the call button to "Call" Comcast Technical Support.</p>
+  <p id="info_speak_now">Speak now.</p>
+  <p id="info_no_speech">No speech was detected. You may need to adjust your
+    <a href="//support.google.com/chrome/bin/answer.py?hl=en&amp;answer=1407892">
+      microphone settings</a>.</p>
+  <p id="info_no_microphone" style="display:none">
+    No microphone was found. Ensure that a microphone is installed and that
+    <a href="//support.google.com/chrome/bin/answer.py?hl=en&amp;answer=1407892">
+    microphone settings</a> are configured correctly.</p>
+  <p id="info_allow">Click the "Allow" button above to enable your microphone.</p>
+  <p id="info_denied">Permission to use microphone was denied.</p>
+  <p id="info_blocked">Permission to use microphone is blocked. To change,
+    go to chrome://settings/contentExceptions#media-stream</p>
+  <p id="info_upgrade">Web Speech API is not supported by this browser.
+     Upgrade to <a href="//www.google.com/chrome">Chrome</a>
+     version 25 or later.</p>
+</div>
+<div class="row" style="margin: 2em">
+  <div class="col-md-6">
+    <div class="well" id="call-dialogue-well" style="height: 15em; overflow-y: scroll;">
+    
+    </div>
+  </div>
+  <div class="col-md-3">
+    <button class="btn btn-default" id="start-call-button"><i class="fa fa-phone" aria-hidden="true"></i> Call Comcast</button>
+    <button class="btn btn-default disabled" id="end-call-button"><i class="fa fa-ban" aria-hidden="true"></i> End Call</button>
+    <br>
+    <hr>
+    <span id="call-time-holder">Call Time: <strong id="call-time-label">0:00</strong></span>
+  </div>
+  <div class="col-md-3">
+    <img id="start_img" src="mic.gif" alt="Start"><span id="mic-help-label"></span>
+  </div>
+</div>
+
+<script>
+var langs =
+[['Afrikaans',       ['af-ZA']],
+ ['Bahasa Indonesia',['id-ID']],
+ ['Bahasa Melayu',   ['ms-MY']],
+ ['Català',          ['ca-ES']],
+ ['Čeština',         ['cs-CZ']],
+ ['Deutsch',         ['de-DE']],
+ ['English',         ['en-AU', 'Australia'],
+                     ['en-CA', 'Canada'],
+                     ['en-IN', 'India'],
+                     ['en-NZ', 'New Zealand'],
+                     ['en-ZA', 'South Africa'],
+                     ['en-GB', 'United Kingdom'],
+                     ['en-US', 'United States']],
+ ['Español',         ['es-AR', 'Argentina'],
+                     ['es-BO', 'Bolivia'],
+                     ['es-CL', 'Chile'],
+                     ['es-CO', 'Colombia'],
+                     ['es-CR', 'Costa Rica'],
+                     ['es-EC', 'Ecuador'],
+                     ['es-SV', 'El Salvador'],
+                     ['es-ES', 'España'],
+                     ['es-US', 'Estados Unidos'],
+                     ['es-GT', 'Guatemala'],
+                     ['es-HN', 'Honduras'],
+                     ['es-MX', 'México'],
+                     ['es-NI', 'Nicaragua'],
+                     ['es-PA', 'Panamá'],
+                     ['es-PY', 'Paraguay'],
+                     ['es-PE', 'Perú'],
+                     ['es-PR', 'Puerto Rico'],
+                     ['es-DO', 'República Dominicana'],
+                     ['es-UY', 'Uruguay'],
+                     ['es-VE', 'Venezuela']],
+ ['Euskara',         ['eu-ES']],
+ ['Français',        ['fr-FR']],
+ ['Galego',          ['gl-ES']],
+ ['Hrvatski',        ['hr_HR']],
+ ['IsiZulu',         ['zu-ZA']],
+ ['Íslenska',        ['is-IS']],
+ ['Italiano',        ['it-IT', 'Italia'],
+                     ['it-CH', 'Svizzera']],
+ ['Magyar',          ['hu-HU']],
+ ['Nederlands',      ['nl-NL']],
+ ['Norsk bokmål',    ['nb-NO']],
+ ['Polski',          ['pl-PL']],
+ ['Português',       ['pt-BR', 'Brasil'],
+                     ['pt-PT', 'Portugal']],
+ ['Română',          ['ro-RO']],
+ ['Slovenčina',      ['sk-SK']],
+ ['Suomi',           ['fi-FI']],
+ ['Svenska',         ['sv-SE']],
+ ['Türkçe',          ['tr-TR']],
+ ['български',       ['bg-BG']],
+ ['Pусский',         ['ru-RU']],
+ ['Српски',          ['sr-RS']],
+ ['한국어',            ['ko-KR']],
+ ['中文',             ['cmn-Hans-CN', '普通话 (中国大陆)'],
+                     ['cmn-Hans-HK', '普通话 (香港)'],
+                     ['cmn-Hant-TW', '中文 (台灣)'],
+                     ['yue-Hant-HK', '粵語 (香港)']],
+ ['日本語',           ['ja-JP']],
+ ['Lingua latīna',   ['la']]];
+
+for (var i = 0; i < langs.length; i++) {
+  select_language.options[i] = new Option(langs[i][0], i);
+}
+select_language.selectedIndex = 6;
+updateCountry();
+select_dialect.selectedIndex = 6;
+showInfo('info_start');
+
+function updateCountry() {
+  for (var i = select_dialect.options.length - 1; i >= 0; i--) {
+    select_dialect.remove(i);
+  }
+  var list = langs[select_language.selectedIndex];
+  for (var i = 1; i < list.length; i++) {
+    select_dialect.options.add(new Option(list[i][1], list[i][0]));
+  }
+  select_dialect.style.visibility = list[1].length == 1 ? 'hidden' : 'visible';
+}
+
+var create_email = false;
+var final_transcript = '';
+var recognizing = false;
+var ignore_onend;
+var start_timestamp;
+
+//============ VARIABLES ADDED FOR HOMEWORK ============ 
+
+
+if (!('webkitSpeechRecognition' in window)) {
+  upgrade();
+} else {
+  var recognition = new webkitSpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onstart = function() {
+    recognizing = true;
+    showInfo('info_speak_now');
+    start_img.src = 'mic-animate.gif';
+  };
+
+  recognition.onerror = function(event) {
+    if (event.error == 'no-speech') {
+      start_img.src = 'mic.gif';
+      showInfo('info_no_speech');
+      ignore_onend = true;
+    }
+    if (event.error == 'audio-capture') {
+      start_img.src = 'mic.gif';
+      showInfo('info_no_microphone');
+      ignore_onend = true;
+    }
+    if (event.error == 'not-allowed') {
+      if (event.timeStamp - start_timestamp < 100) {
+        showInfo('info_blocked');
+      } else {
+        showInfo('info_denied');
+      }
+      ignore_onend = true;
+    }
+  };
+
+  recognition.onend = function() {
+    recognizing = false;
+    //clearInterval(rate_interval);
+    if (ignore_onend) {
+      return;
+    }
+    start_img.src = 'mic.gif';
+    if (!final_transcript) {
+      showInfo('info_start');
+      return;
+    }
+    showInfo('');
+    if (window.getSelection) {
+      window.getSelection().removeAllRanges();
+      var range = document.createRange();
+      range.selectNode(document.getElementById('final_span'));
+      window.getSelection().addRange(range);
+    }
+    if (create_email) {
+      create_email = false;
+      createEmail();
+    }
+  };
+
+  recognition.onresult = function(event) {
+    var interim_transcript = '';
+    temp_transcript = '';
+    for (var i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        final_transcript += event.results[i][0].transcript;
+      } else {
+        interim_transcript += event.results[i][0].transcript;
+        temp_transcript += event.results[i][0].transcript;
+      }
+    }
+    final_transcript = capitalize(final_transcript);
+    final_span.innerHTML = linebreak(final_transcript);
+    interim_span.innerHTML = linebreak(interim_transcript);
+    if (final_transcript || interim_transcript) {
+      showButtons('inline-block');
+    }
+    console.log("Final:", final_transcript, "Interim:", interim_transcript);
+  };
+}
+
+function upgrade() {
+  start_button.style.visibility = 'hidden';
+  showInfo('info_upgrade');
+}
+
+var two_line = /\n\n/g;
+var one_line = /\n/g;
+function linebreak(s) {
+  return s.replace(two_line, '<p></p>').replace(one_line, '<br>');
+}
+
+var first_char = /\S/;
+function capitalize(s) {
+  return s.replace(first_char, function(m) { return m.toUpperCase(); });
+}
+
+function createEmail() {
+  var n = final_transcript.indexOf('\n');
+  if (n < 0 || n >= 80) {
+    n = 40 + final_transcript.substring(40).indexOf(' ');
+  }
+  var subject = encodeURI(final_transcript.substring(0, n));
+  var body = encodeURI(final_transcript.substring(n + 1));
+  window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
+}
+
+function copyButton() {
+  if (recognizing) {
+    recognizing = false;
+    recognition.stop();
+  }
+  copy_button.style.display = 'none';
+  copy_info.style.display = 'inline-block';
+  showInfo('');
+}
+
+function emailButton() {
+  if (recognizing) {
+    create_email = true;
+    recognizing = false;
+    recognition.stop();
+  } else {
+    createEmail();
+  }
+  email_button.style.display = 'none';
+  email_info.style.display = 'inline-block';
+  showInfo('');
+}
+
+function startButton(event) {
+  if (recognizing) {
+    recognition.stop();
+    return;
+  }
+  final_transcript = '';
+  recognition.lang = select_dialect.value;
+  recognition.start();
+  ignore_onend = false;
+  final_span.innerHTML = '';
+  interim_span.innerHTML = '';
+  start_img.src = 'mic-slash.gif';
+  showInfo('info_allow');
+  showButtons('none');
+  start_timestamp = event.timeStamp;
+}
+
+function showInfo(s) {
+  if (s) {
+    for (var child = info.firstChild; child; child = child.nextSibling) {
+      if (child.style) {
+        child.style.display = child.id == s ? 'inline' : 'none';
+      }
+    }
+    info.style.visibility = 'visible';
+  } else {
+    info.style.visibility = 'hidden';
+  }
+}
+
+var current_style;
+function showButtons(style) {
+  if (style == current_style) {
+    return;
+  }
+  current_style = style;
+  copy_button.style.display = style;
+  email_button.style.display = style;
+  copy_info.style.display = 'none';
+  email_info.style.display = 'none';
+}
+
+// Takes a string as input, and returns the number of 
+// words as output.
+// Ex: "The quick brown fox jumps over the lazy dog" would return 9.
+function get_word_count(str) {
+  if (str.length == 0) {
+    return 0;
+  } else {
+    return str.match(/\S+/g).length;
+  }
+}
+
+// Takes an array as input, and returns the sum 
+// of the array as output.
+// Ex: The array sum of [0, 1, 2, 3] is 6.
+// array_sum([0, 1, 2, 3]) = 6
+function array_sum(arr) {
+  return arr.reduce(function(a, b) {
+    return a + b;
+  });
+}
+</script>
+
+<script>
+
+var CallManager = {};
+CallManager.state = "welcome";
+CallManager.prevState = "";
+CallManager.active = false;
+CallManager.callTime = 0;
+CallManager.isListening = false;
+CallManager.currentKeywords = [];
+
+CallManager.startCall = function(){
+
+  if(CallManager.active == true){
+    console.log("Call Already In Progress");
+  }else{
+    console.log("Starting Call");
+    $("#call-dialogue-well").html("");
+    CallManager.active = true;
+    CallManager.state = "welcome";
+    CallManager.callLoopInterval = setInterval(CallManager.callLoop,1000);
+    CallManager.unrecognizedCount = 0;
+
+    //Set Timer For Call
+    CallManager.callTime = 0;
+    CallManager.callInterval = setInterval(function(){
+      CallManager.callTime += 1;
+
+      var min = Math.floor( CallManager.callTime / 60 );
+      var sec = CallManager.callTime % 60;
+      if(sec < 10){
+        sec = "0" + sec.toString();
+      }
+
+      $("#call-time-label").html(min + ":" + sec);
+    }, 1000);
+  }
+  
+
+}
+
+CallManager.endCall = function(){
+
+  if(CallManager.active == true){
+    console.log("Ending Call");
+    CallManager.active = false;
+    clearInterval(CallManager.callInterval);
+    clearInterval(CallManager.callLoopInterval);
+
+    start_img.src = 'mic.gif';
+  }else{
+    console.log("Call not active");
+  }
+}
+
+CallManager.speak = function(msg, callback){
+  CallManager.message = new SpeechSynthesisUtterance(msg);
+  CallManager.message.onend = callback;
+  window.speechSynthesis.speak(CallManager.message);
+  $("#call-dialogue-well").append("<br><span><strong>Agent: </strong>" + msg + "</span>");
+}
+
+CallManager.callLoop = function(){
+
+  console.log("STATE: ", CallManager.state);
+
+  switch(CallManager.state){
+    case "welcome":
+      CallManager.state = "speaking";
+      CallManager.speak("Hello, welcome to comcast technical support.", function(){
+        CallManager.speak("Please select one of the following: Account Information, Technical Support, or Product Information. To end the call, say \"end call\".", function(){
+            console.log("Finished Speaking");
+            CallManager.currentKeywords = ["account information", "technical support", "product information", "end call"];
+            CallManager.state = "listening";
+            start_img.src = 'mic-animate.gif';
+        });
+      });
+      break;
+    case "listening":
+      if(CallManager.isListening != true){
+        CallManager.startListening();
+      }
+      break;
+    case "speaking":
+      start_img.src = "mic.gif";
+      break;
+    case "account information":
+      CallManager.state = "speaking";
+      CallManager.speak("Account Information. Would you like to check balance or pay balance?", function(){
+        console.log("Finished Speaking");
+        CallManager.currentKeywords = ["pay balance", "check balance"];
+        CallManager.state = "listening";
+        start_img.src = 'mic-animate.gif';
+      });
+      break;
+    case "product information":
+      CallManager.state = "speaking";
+      CallManager.speak("Product Information. We currently offer three products: Internet, Television, and Phone. Would you like to purchase any of these products? Yes or No.", function(){
+        console.log("Finished Speaking");
+        CallManager.prevState = "product information";
+        CallManager.currentKeywords = ["yes", "no"];
+        CallManager.state = "listening";
+        start_img.src = 'mic-animate.gif';
+      });
+      break;
+    case "technical support":
+      CallManager.state = "speaking";
+      CallManager.speak("Technical Support. Please briefly describe your problem.", function(){
+        console.log("Finished Speaking");
+        CallManager.currentKeywords = [];
+        CallManager.prevState = "technical support";
+        CallManager.state = "listening";
+        start_img.src = 'mic-animate.gif';
+      });
+      break;
+    case "troubleshoot":
+      CallManager.state = "speaking";
+      CallManager.speak("Have you tried turning it on and off? Yes or no.", function(){
+        console.log("Finished Speaking");
+        CallManager.currentKeywords = ["yes", "no"];
+        CallManager.prevState = "troubleshooting";
+        CallManager.state = "listening";
+        start_img.src = 'mic-animate.gif';
+      });
+      break;
+    case "pay balance":
+      CallManager.state = "speaking";
+      CallManager.speak("Pay Balance. Transferring you to our secure system to process your payment information.", function(){
+        console.log("Finished Speaking");
+        CallManager.state = "payment process";
+        start_img.src = 'mic-animate.gif';
+      });
+      break;
+    case "payment process":
+      CallManager.state = "speaking";
+      CallManager.speak("Payment Process. Please tell me the digits of your credit card number.", function(){
+        console.log("Finished Speaking");
+        CallManager.currentKeywords = [];
+        CallManager.prevState = "payment process";
+        CallManager.state = "listening";
+        start_img.src = 'mic-animate.gif';
+      });
+      break;
+    case "check balance":
+      CallManager.state = "speaking";
+      CallManager.speak("Check Balance. You currently have an outstanding balance of $100 on your account. Transferring you to pay this balance.", function(){
+        console.log("Finished Speaking");
+        CallManager.state = "pay balance";
+        start_img.src = 'mic-animate.gif';
+      });
+      break;
+    case "yes":
+      CallManager.state = "speaking";
+      if(CallManager.prevState == "product information"){
+        CallManager.speak("Awesome! What product would you like to purchase?", function(){
+          console.log("Finished Speaking");
+          CallManager.currentKeywords = ["internet", "television", "phone"];
+          CallManager.prevState = "yes-product information";
+          CallManager.state = "listening";
+          start_img.src = 'mic-animate.gif';
+        });
+      }else if(CallManager.prevState == "troubleshooting"){
+          CallManager.speak("We will connect you to the next available technical agent.", function(){
+            console.log("Finished Speaking");
+            CallManager.state = "end call";
+            start_img.src = 'mic.gif';
+          });
+      }else if(CallManager.prevState == "troubleshooting-2"){
+        CallManager.speak("I am glad we could help. Have a good day.", function(){
+          console.log("Finished Speaking");
+          CallManager.state = "end call";
+          start_img.src = 'mic.gif';
+        });
+      }
+      break;
+    case "no":
+      CallManager.state = "speaking";
+      if(CallManager.prevState == "product information"){
+        CallManager.speak("Oh ok! Taking you back to the main menu.", function(){
+          console.log("Finished Speaking");
+          CallManager.state = "welcome";
+          start_img.src = 'mic.gif';
+        });
+      }else if(CallManager.prevState == "troubleshooting"){
+        CallManager.speak("Try turning it off and on.", function(){
+          console.log("Finished Speaking");
+          CallManager.speak("Did it work? Yes or no.", function(){
+            console.log("Finished Speaking");
+            CallManager.currentKeywords = ["yes", "no"];
+            CallManager.prevState = "troubleshooting-2";
+            CallManager.state = "listening";
+            start_img.src = 'mic-animate.gif';
+          });
+        });
+      }else if(CallManager.prevState == "troubleshooting-2"){
+        CallManager.speak("We will connect you to the next available technical agent.", function(){
+          console.log("Finished Speaking");
+          CallManager.state = "end call";
+          start_img.src = 'mic.gif';
+        });
+      }
+      break;
+    case "end call":
+      CallManager.speak("Goodbye.", function(){
+          console.log("Finished Speaking");
+          CallManager.endCall();
+          start_img.src = 'mic.gif';
+      });
+      break;
+    
+  }
+}
+
+CallManager.startListening = function(){
+  CallManager.isListening = true;
+  CallManager.recognition = new webkitSpeechRecognition();
+  CallManager.recognition.continuous = true;
+  CallManager.recognition.interimResults = true;
+  CallManager.recognition.lang = select_dialect.value;
+  
+  start_img.src = 'mic-animate.gif';
+
+  CallManager.recognition.onerror = function(event) {
+    if (event.error == 'no-speech') {
+      start_img.src = 'mic.gif';
+      showInfo('info_no_speech');
+      ignore_onend = true;
+    }
+    if (event.error == 'audio-capture') {
+      start_img.src = 'mic.gif';
+      showInfo('info_no_microphone');
+      ignore_onend = true;
+    }
+    if (event.error == 'not-allowed') {
+      if (event.timeStamp - start_timestamp < 100) {
+        showInfo('info_blocked');
+      } else {
+        showInfo('info_denied');
+      }
+      ignore_onend = true;
+    }
+  };
+
+  CallManager.recognition.onend = function() {
+    console.log("Listening: OnEnd");
+    CallManager.isListening = false;
+  };
+
+  CallManager.recognition.onresult = function(event) {
+    var interim_transcript = '';
+    var temp_words = '';
+    var final_words = "";
+    for (var i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        final_words += event.results[i][0].transcript;
+      } else {
+        interim_transcript += event.results[i][0].transcript;
+        temp_words += event.results[i][0].transcript;
+      }
+    }
+
+    final_words = final_words.toLowerCase().trim();
+
+    if(final_words != ""){
+      CallManager.recognition.stop();
+
+      var found_keyword = false;
+      if(CallManager.currentKeywords.length == 0){
+        found_keyword = true;
+        if(CallManager.prevState == "technical support"){
+          CallManager.state = "troubleshoot";
+        }else if(CallManager.prevState == "payment process"){
+          
+        }
+      }
+      for(var i=0; i<CallManager.currentKeywords.length; i++){
+        var keyword = CallManager.currentKeywords[i];
+
+        if(final_words.includes(keyword)){
+          found_keyword = true;
+          console.log(final_words + " = INCLUDES:", keyword);
+          if(CallManager.prevState == "yes-product information"){
+            CallManager.state = "payment process";
+            CallManager.prevState = "none";
+          }else{
+            CallManager.state = keyword;
+          }
+          
+        }
+      }
+
+      if(found_keyword == false){
+        CallManager.state = "speaking";
+        start_img.src = 'mic.gif';
+        CallManager.unrecognizedCount += 1;
+        console.log("UNREC:", CallManager.unrecognizedCount);
+        if(CallManager.unrecognizedCount == 3){
+          CallManager.speak("It seems I am having trouble helping you. Transferring you to the next available agent.", function(){
+            CallManager.state = "end call";
+            CallManager.unrecognizedCount = 0;
+        });
+        }else{
+          CallManager.speak("Command Not Recognized. Try again.", function(){
+            CallManager.state = "listening";
+          });
+        }
+        
+      }
+      CallManager.isListening = false;
+      
+    }
+
+    console.log("Final:", final_words, "Interim:", interim_transcript);
+  };
+
+  CallManager.recognition.start();
+
+}
+
+
+  $(document).ready(function(){
+
+    $("#start-call-button").click(function(){
+      $(this).addClass("disabled");
+      $("#end-call-button").removeClass("disabled");
+      CallManager.startCall();  //start call
+    });
+
+    $("#end-call-button").click(function(){
+      $(this).addClass("disabled");
+      $("#start-call-button").removeClass("disabled");
+      CallManager.endCall();    //End Call
+    });
+
+  })
+
+
+</script>
